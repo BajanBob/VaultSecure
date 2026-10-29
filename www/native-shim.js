@@ -36,6 +36,22 @@
       if (list.length) await LN.schedule({ notifications: list });
     },
   };
+  var FEMALE = /female|woman|samantha|victoria|karen|moira|tessa|fiona|zira|serena|allison|ava|joanna|sonia|aria|jenny|emma|olivia|amy/i;
+  var MALE = /\bmale\b|daniel|alex|fred|david|mark|george|james|ryan|guy|tom|oliver|arthur|aaron|thomas|matthew|brian/i;
+  /** Phones: read text aloud with the system voice, choosing a female or male voice when the device names them. */
+  window.NativeShim.speak = async function (text, opts) {
+    if (!native || !P.TextToSpeech) throw new Error('No native voice');
+    opts = opts || {};
+    var voice; try {
+      var list = (await P.TextToSpeech.getSupportedVoices()).voices || [];
+      var re = opts.gender === 'male' ? MALE : FEMALE;
+      for (var i = 0; i < list.length; i++) if (/^en/i.test(list[i].lang) && re.test(list[i].name || '')) { voice = i; break; }
+    } catch (e) { /* voices unknown */ }
+    var o = { text: text, lang: 'en-US', rate: opts.rate || 1, pitch: voice == null && opts.gender === 'male' ? 0.8 : 1, volume: 1, category: 'playback' };
+    if (voice != null) o.voice = voice;
+    return P.TextToSpeech.speak(o);
+  };
+  window.NativeShim.stopSpeaking = function () { if (native && P.TextToSpeech) return P.TextToSpeech.stop(); };
   // Phones: open web links in the system browser instead of inside the app.
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href]');
