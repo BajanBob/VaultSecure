@@ -1,0 +1,15 @@
+{
+  "appId": "com.bajanbob.vaultsecure",
+  "appName": "Vault Secure",
+  "webDir": "www",
+  "backgroundColor": "#0c1317",
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#0c1317",
+      "launchShowDuration": 500
+    },
+    "LocalNotifications": {
+      "iconColor": "#3cc4b5"
+    }
+  }
+}

@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1317">
+</head>
+<body>
+<title>Vault Secure</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: vault-door header with Hide / Reveal tabs; each flow is a column of numbered steps; results open as a key card (QR + countdown) beside the carrier list. */
+:root {
+  --bg: #edf0f2; --surface: #ffffff; --sunk: #e3e8eb; --ink: #0f1a20; --muted: #556670; --line: #cfd8dd;
+  --accent: #0b6b66; --accent-ink: #ffffff; --accent-soft: #d9efec; --brass: #a8761b; --brass-soft: #f6ead2;
+  --ok: #1d8a4e; --ok-soft: #e0f3e8; --bad: #c2372f; --bad-soft: #fbe5e3;
+  --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c1317; --surface: #131e23; --sunk: #0f181c; --ink: #e6eef1; --muted: #93a6ae; --line: #24343b;
+  --accent: #3cc4b5; --accent-ink: #062320; --accent-soft: #123331; --brass: #e2b25a; --brass-soft: #2f2612;
+  --ok: #4fcf87; --ok-soft: #12301f; --bad: #ff7a70; --bad-soft: #3a1714; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0c1317; --surface: #131e23; --sunk: #0f181c; --ink: #e6eef1; --muted: #93a6ae; --line: #24343b;
+  --accent: #3cc4b5; --accent-ink: #062320; --accent-soft: #123331; --brass: #e2b25a; --brass-soft: #2f2612;
+  --ok: #4fcf87; --ok-soft: #12301f; --bad: #ff7a70; --bad-soft: #3a1714; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15.5px/1.5 var(--font-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+a { color: var(--accent); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mono { font-family: var(--font-mono); }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 19px var(--font-display); letter-spacing: 0.02em; }
+.dial { width: 34px; height: 34px; }
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--sunk); border: 1px solid var(--line); margin-left: auto; }
+.tabs a { padding: 8px 18px; border-radius: 9px; text-decoration: none; color: var(--muted); font-weight: 600; }
+.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+.badge { font: 600 11.5px var(--font-mono); color: var(--muted); letter-spacing: 0.04em; }
+
+main.wrap { padding-block: 22px 48px; display: grid; gap: 18px; }
+.intro { display: grid; gap: 6px; max-width: 70ch; }
+.intro h1 { font-size: clamp(24px, 4vw, 34px); line-height: 1.12; }
+.intro p { margin: 0; color: var(--muted); }
+
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.step > header { display: flex; align-items: baseline; gap: 12px; }
+.step .num { font: 700 13px var(--font-mono); color: var(--brass); background: var(--brass-soft); border-radius: 6px; padding: 2px 8px; }
+.step h2 { font-size: 18px; }
+.step .sub { color: var(--muted); font-size: 14px; margin: -6px 0 0; }
+.cols2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+
+.drop { border: 2px dashed var(--line); border-radius: 12px; padding: 16px; background: var(--sunk); display: grid; gap: 6px; place-items: center; text-align: center; cursor: pointer; min-height: 120px; min-width: 0; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop b { font-family: var(--font-display); font-size: 14.5px; font-weight: 500; }
+.drop span { font-size: 13px; color: var(--muted); }
+.filecard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunk); min-width: 0; }
+.filecard .ic { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font: 700 11px var(--font-mono); text-transform: uppercase; }
+.filecard .nm { font-weight: 600; overflow-wrap: anywhere; }
+.filecard .mt { font-size: 13px; color: var(--muted); }
+
+.slot { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; background: var(--surface); min-width: 0; align-content: start; }
+.slot h3 { font: 600 13px var(--font-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.slot .thumb { width: 100%; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 8px; object-fit: cover; background: var(--sunk); display: block; }
+.slot .cap { font: 500 12.5px var(--font-mono); color: var(--muted); }
+.slot .cap b { color: var(--ink); }
+.memebox { display: grid; gap: 6px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.chip span { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--sunk); font-weight: 600; font-size: 14px; }
+.chip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip input:focus-visible + span { outline: 3px solid var(--brass); outline-offset: 2px; }
+.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--sunk); }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt input { margin-top: 4px; accent-color: var(--accent); }
+.opt b { display: block; }
+.opt span { font-size: 13px; color: var(--muted); }
+
+label.fl { font-weight: 600; font-size: 14px; display: block; margin-bottom: 6px; }
+input[type=text], input[type=password], input:not([type]), textarea, select { width: 100%; min-height: 42px; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); }
+input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+.hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; cursor: pointer; color: var(--ink); text-decoration: none; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.big { min-height: 52px; padding: 0 24px; font-size: 16.5px; font-family: var(--font-display); font-weight: 500; }
+.btn.small { min-height: 32px; padding: 0 10px; font-size: 13px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.meter { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; border: 1px solid var(--line); }
+.meter b { display: block; height: 100%; background: var(--accent); width: 0; }
+.meter.over b { background: var(--bad); }
+
+.note { border-radius: 10px; padding: 10px 12px; font-size: 14px; border: 1.5px solid; }
+.note.info { background: var(--accent-soft); border-color: var(--accent); }
+.note.warn { background: var(--brass-soft); border-color: var(--brass); }
+.note.bad { background: var(--bad-soft); border-color: var(--bad); }
+.note.ok { background: var(--ok-soft); border-color: var(--ok); }
+.log { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--sunk); border: 1px solid var(--line); font: 12.5px/1.6 var(--font-mono); white-space: pre-wrap; max-height: 180px; overflow: auto; }
+
+/* key card */
+.result { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.keycard { border-radius: 16px; padding: 18px; display: grid; gap: 12px; background: var(--ink); color: var(--bg); justify-items: center; text-align: center; }
+.keycard canvas { width: 100%; max-width: 260px; height: auto; border-radius: 8px; background: #fff; }
+.keycard .lbl { font: 600 11px var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; }
+.timer { font: 600 30px/1 var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.timer small { font-size: 14px; opacity: .7; }
+.ring { width: 100%; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--bg) 25%, transparent); overflow: hidden; }
+.ring b { display: block; height: 100%; background: var(--brass); }
+.code { font: 12px/1.4 var(--font-mono); word-break: break-all; opacity: .85; user-select: all; }
+.keycard .btn { background: transparent; color: var(--bg); border-color: color-mix(in srgb, var(--bg) 40%, transparent); }
+.outs { display: grid; gap: 10px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.fact { padding: 10px 12px; border-radius: 10px; background: var(--sunk); border: 1px solid var(--line); }
+.fact b { display: block; font: 600 15px var(--font-mono); font-variant-numeric: tabular-nums; }
+.fact span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.longbox { display: grid; gap: 12px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--brass); background: var(--brass-soft); }
+.notices { display: grid; gap: 10px; padding-block: 12px 0; }
+.notice { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: start; padding: 14px; border-radius: 14px; border: 2px solid var(--brass); background: var(--surface); box-shadow: 0 6px 24px -12px color-mix(in srgb, var(--ink) 40%, transparent); }
+.bell { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--brass); color: var(--surface); }
+.notice h3 { font-size: 16px; }
+.notice p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
+.notice .row { grid-column: 1 / -1; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.vlist { display: grid; gap: 10px; }
+.vault { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+.vault h3 { font-size: 16px; overflow-wrap: anywhere; }
+.vault .meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.vault .meta b { color: var(--ink); font-family: var(--font-mono); font-weight: 600; }
+.vault .row { grid-column: 1 / -1; }
+.pill { align-self: start; justify-self: end; display: inline-block; padding: 3px 10px; border-radius: 999px; font: 600 12px var(--font-mono); white-space: nowrap; }
+.pill.open { background: var(--ok-soft); color: var(--ok); } .pill.due { background: var(--brass-soft); color: var(--brass); }
+.pill.gone { background: var(--bad-soft); color: var(--bad); } .pill.auto { background: var(--accent-soft); color: var(--accent); }
+.sched { display: flex; flex-wrap: wrap; gap: 6px; }
+.sched span { font: 500 12px var(--font-mono); padding: 2px 8px; border-radius: 6px; background: var(--sunk); border: 1px solid var(--line); }
+.sched span.done { color: var(--ok); } .sched span.missed { color: var(--bad); border-color: var(--bad); } .sched span.next { border-color: var(--brass); color: var(--brass); }
+details.how { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
+details.how summary { cursor: pointer; font: 600 15px var(--font-display); }
+details.how ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14.5px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; z-index: 20; max-width: calc(100vw - 32px); }
+
+@media (max-width: 860px) { .cols3 { grid-template-columns: 1fr; } .result { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .cols2 { grid-template-columns: 1fr; } .tabs { margin-left: 0; width: 100%; } .tabs a { flex: 1; text-align: center; } .badge { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <svg class="dial" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="var(--accent)" stroke-width="3"/><circle cx="20" cy="20" r="8" fill="none" stroke="var(--brass)" stroke-width="3"/><path d="M20 2v6M20 32v6M2 20h6M32 20h6M7 7l4 4M29 29l4 4M33 7l-4 4M11 29l-4 4" stroke="var(--accent)" stroke-width="2"/></svg>
+    Vault Secure
+  </div>
+  <span class="badge">AES-256-GCM · token split · QR key</span>
+  <nav class="tabs" aria-label="Mode"><a href="#hide" id="tabHide">Hide a file</a><a href="#reveal" id="tabReveal">Reveal a file</a><a href="#vaults" id="tabVaults">My vaults</a></nav>
+</div></header>
+<div class="wrap notices" id="notices" role="alertdialog" aria-live="assertive" aria-label="Vault check-ins" hidden></div>
+
+<main class="wrap">
+<!-- ================= HIDE ================= -->
+<section id="viewHide" aria-labelledby="hideTitle" style="display:grid;gap:18px">
+  <div class="intro"><h1 id="hideTitle">Hide one file inside up to three pieces of media</h1>
+    <p>Your file is encrypted with a fresh 256-bit key, cut into tokens and spread through a song, a picture, a meme, a video or a document. The key leaves as a QR code that stops working when the timer runs out.</p></div>
+
+  <section class="step"><header><span class="num">01</span><h2>The secret file</h2></header>
+    <p class="sub">Any file: a Word document, PDF, photo, spreadsheet, anything.</p>
+    <div id="secretArea"></div>
+  </section>
+
+  <section class="step"><header><span class="num">02</span><h2>Where to hide it</h2></header>
+    <p class="sub">Drop one, two or three carriers. Mixing types (song + picture + meme) makes the file hardest to find.</p>
+    <div class="cols3" id="slots"></div>
+    <div>
+      <label class="fl">How to spread the file</label>
+      <div class="cols2">
+        <label class="opt"><input type="radio" name="mode" value="split" checked><div><b>Split across all</b><span>Each carrier holds only some of the tokens. All of them are needed to open the file.</span></div></label>
+        <label class="opt"><input type="radio" name="mode" value="copies"><div><b>Copy into each</b><span>Every carrier holds the whole file. Any one of them opens it.</span></div></label>
+      </div>
+    </div>
+    <div><div class="row" style="justify-content:space-between"><span class="fl" style="margin:0">Space used</span><span class="mono" id="capTxt" style="font-size:13px">—</span></div><div class="meter" id="capMeter"><b></b></div></div>
+  </section>
+
+  <section class="step"><header><span class="num">03</span><h2>How long the key works</h2></header>
+    <div class="chips" role="radiogroup" aria-label="Expiration">
+      <label class="chip"><input type="radio" name="ttl" value="24h"><span>24 hours</span></label>
+      <label class="chip"><input type="radio" name="ttl" value="7d" checked><span>7 days</span></label>
+      <label class="chip"><input type="radio" name="ttl" value="31d"><span>31 days</span></label>
+      <label class="chip"><input type="radio" name="ttl" value="3m"><span>3 months</span></label>
+      <label class="chip"><input type="radio" name="ttl" value="6m"><span>6 months</span></label>
+      <label class="chip"><input type="radio" name="ttl" value="366d"><span>366 days</span></label>
+      <label class="chip"><input type="radio" name="ttl" value="long"><span>2 to 17 years</span></label>
+    </div>
+    <div class="longbox" id="longBox" hidden>
+      <div class="cols2">
+        <div><label class="fl" for="yearsSel">Long-term storage</label><select id="yearsSel"></select></div>
+        <div><label class="fl">If nobody answers a check-in within 30 days</label>
+          <div class="cols2" style="gap:8px">
+            <label class="opt"><input type="radio" name="policy" value="renew" checked><div><b>Renew</b><span>Keep it open until the next check-in.</span></div></label>
+            <label class="opt"><input type="radio" name="policy" value="terminate"><div><b>Terminate</b><span>Stop opening it.</span></div></label>
+          </div></div>
+      </div>
+      <p class="hint" style="margin:0">From year 2, Vault Secure beeps every 6 months and asks: renew, switch to automatic renewal, or terminate.</p>
+      <div><span class="fl">Check-in dates</span><div class="sched" id="schedEcho"></div></div>
+    </div>
+    <p class="hint" id="ttlEcho" style="margin:0"></p>
+    <p class="hint" style="margin:0">Scanned with an ordinary phone camera, the QR only shows: “This Vault QR code is locked for a specific period.”</p>
+    <div><label class="fl" for="nickIn">Vault nickname</label><input id="nickIn" placeholder="For example: Family papers" maxlength="60"><div class="hint">Shown in check-in notices and in My vaults. It is kept on this device only.</div></div>
+    <div class="cols2">
+      <div><label class="fl" for="passHide">Passphrase (optional, recommended)</label><input id="passHide" type="password" autocomplete="new-password" placeholder="Something only you and the receiver know"><div class="hint">With a passphrase, the QR code alone cannot open the file. Without one, whoever holds the QR and the carriers can.</div></div>
+      <div><label class="fl" for="bitsSel">Hiding strength</label>
+        <div class="cols2" style="gap:8px">
+          <label class="opt"><input type="radio" name="bits" value="1" checked><div><b>Stealth</b><span>1 bit per value. Hardest to detect.</span></div></label>
+          <label class="opt"><input type="radio" name="bits" value="2"><div><b>Capacity</b><span>2 bits. Twice the space.</span></div></label>
+        </div></div>
+    </div>
+  </section>
+
+  <div class="row"><button class="btn primary big" id="lockBtn" type="button" disabled>Lock and hide</button><span class="hint" id="lockWhy" style="margin:0"></span></div>
+  <pre class="log" id="hideLog" hidden></pre>
+
+  <section class="step" id="hideResult" hidden><header><span class="num">04</span><h2>Your vault is ready</h2></header>
+    <div class="result">
+      <div class="keycard">
+        <span class="lbl">Decryption key · 256-bit</span>
+        <canvas id="qrCanvas" width="600" height="680" aria-label="QR code holding the decryption key"></canvas>
+        <span class="lbl">Expires in</span>
+        <div class="timer" id="hideTimer">—</div>
+        <div class="ring" aria-hidden="true"><b id="hideRing"></b></div>
+        <div class="code" id="keyText"></div>
+        <div class="row" style="justify-content:center"><button class="btn small" id="saveQr" type="button">Save QR image</button><button class="btn small" id="copyKey" type="button">Copy key text</button><button class="btn small" id="saveIcs" type="button" hidden>Calendar reminders</button></div>
+      </div>
+      <div style="display:grid;gap:12px;min-width:0">
+        <div class="facts" id="facts"></div>
+        <div class="outs" id="outs"></div>
+        <div class="note warn"><b>Send carriers as files.</b> Chat apps and social networks re-compress photos and audio, which wipes the hidden tokens. Share them as documents, email attachments, a USB stick or cloud storage. Keep the QR code apart from the carriers.</div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ================= REVEAL ================= -->
+<section id="viewReveal" aria-labelledby="revealTitle" style="display:grid;gap:18px" hidden>
+  <div class="intro"><h1 id="revealTitle">Reveal a hidden file</h1>
+    <p>Show Vault Secure the QR key and the carriers. It finds the tokens, checks every one, and rebuilds the file if the key has not expired.</p></div>
+
+  <section class="step"><header><span class="num">01</span><h2>The QR key</h2></header>
+    <div class="cols2">
+      <label class="drop" id="qrDrop" for="qrIn"><b>Drop the QR image</b><span>A screenshot or photo of the QR code works.</span><input id="qrIn" type="file" accept="image/*" class="sr"></label>
+      <div><label class="fl" for="keyIn">Or paste the key text</label><textarea id="keyIn" rows="3" spellcheck="false" placeholder="VSEC1-…"></textarea></div>
+    </div>
+    <div id="ticketInfo"></div>
+    <div id="passRevealWrap" hidden><label class="fl" for="passReveal">Passphrase</label><input id="passReveal" type="password" autocomplete="current-password"></div>
+  </section>
+
+  <section class="step"><header><span class="num">02</span><h2>The carriers</h2></header>
+    <label class="drop" id="carDrop" for="carIn"><b>Drop the song, picture, meme, video or document</b><span>Add every carrier you have, in any order.</span><input id="carIn" type="file" multiple class="sr"></label>
+    <div class="outs" id="carList"></div>
+  </section>
+
+  <div class="row"><button class="btn primary big" id="unlockBtn" type="button" disabled>Unlock</button><span class="hint" id="unlockWhy" style="margin:0"></span></div>
+  <pre class="log" id="revealLog" hidden></pre>
+  <section class="step" id="revealResult" hidden></section>
+</section>
+
+<!-- ================= MY VAULTS ================= -->
+<section id="viewVaults" aria-labelledby="vaultsTitle" style="display:grid;gap:18px" hidden>
+  <div class="intro"><h1 id="vaultsTitle">My vaults</h1>
+    <p>Every vault made on this device, with its timer and check-ins. Long-term vaults ask every 6 months from year 2 whether to renew or terminate.</p></div>
+  <div class="row"><button class="btn" id="testBeep" type="button">Play the check-in beep</button><label class="row" style="gap:8px;font-size:14px"><input type="checkbox" id="muteBeep"> Mute beeps</label></div>
+  <div class="vlist" id="vlist"></div>
+</section>
+
+<details class="how">
+  <summary>How Vault Secure protects the file</summary>
+  <ul>
+    <li><b>Encryption:</b> AES-256-GCM, the cipher used by banks and governments, with a key made fresh for every vault by your device’s secure random generator. GCM also detects any tampering.</li>
+    <li><b>Hybrid key:</b> with a passphrase, the QR key and the passphrase (stretched with 600,000 rounds of PBKDF2) are mixed through HKDF-SHA-256. Both are needed.</li>
+    <li><b>Quantum-resistant:</b> quantum computers break public-key systems like RSA. Vault Secure uses no public keys; a 256-bit AES key keeps about 128-bit strength even against a quantum attacker, which is considered safe.</li>
+    <li><b>Tokens:</b> the encrypted file is cut into numbered tokens, each sealed with its own HMAC-SHA-256 tag, then dealt out across the carriers.</li>
+    <li><b>Smart placement:</b> in pictures and songs the tokens go into the busiest pixels and loudest samples first, where tiny changes are least noticeable, in an order only the key can reproduce. Videos and documents carry them in an extra data block that players and readers ignore.</li>
+    <li><b>Locked QR:</b> the QR code opens with a notice that it is locked for a specific period, so a normal scanner shows that message instead of a usable link. Only Vault Secure reads the key inside it. Add a passphrase and the key text alone is useless.</li>
+    <li><b>Long-term check-ins:</b> vaults kept 2 to 17 years get a check-in every 6 months from year 2. Vault Secure beeps and asks you to renew, turn on automatic renewal, or terminate. Unanswered check-ins follow the rule you chose after 30 days. Check-ins are kept on the device that made the vault; add the calendar reminders so your phone beeps even when Vault Secure is closed.</li>
+    <li><b>Expiry:</b> the expiry time is sealed into the encryption, so it cannot be edited. Vault Secure refuses to open a vault after it expires and the timer shows how long is left. Anyone who keeps the QR key, the carriers and a modified program could still try after expiry; for hard deletion, destroy the QR code when the timer ends.</li>
+    <li><b>Nothing leaves your device.</b> All of this runs in your browser. No file or key is uploaded anywhere.</li>
+  </ul>
+</details>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="native-shim.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const te = new TextEncoder(), td = new TextDecoder();
+  const now = () => Date.now() + (window.__vsClock || 0);
+  const subtle = crypto.subtle;
+  const fmtSize = (n) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB');
+  function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2400); }
+
+  /* =====================================================================
+     BYTES + CRYPTO
+     ===================================================================== */
+  const concat = (...a) => { const n = a.reduce((s, x) => s + x.length, 0), o = new Uint8Array(n); let p = 0; for (const x of a) { o.set(x, p); p += x.length; } return o; };
+  const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+  const b64u = {
+    enc(b) { let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const r = atob(s), o = new Uint8Array(r.length); for (let i = 0; i < r.length; i++) o[i] = r.charCodeAt(i); return o; },
+  };
+  const putU32 = (b, o, v) => { b[o] = v >>> 24; b[o + 1] = (v >>> 16) & 255; b[o + 2] = (v >>> 8) & 255; b[o + 3] = v & 255; };
+  const getU32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+
+  async function hkdf(ikm, salt, info, len = 32) {
+    const k = await subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+    return new Uint8Array(await subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: te.encode(info) }, k, len * 8));
+  }
+  async function deriveKeys(master, vaultId, pass) {
+    let ikm = master;
+    if (pass) {
+      const pk = await subtle.importKey('raw', te.encode(pass.normalize('NFKC')), 'PBKDF2', false, ['deriveBits']);
+      const pb = new Uint8Array(await subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: concat(vaultId, te.encode('VaultSecure/pass')), iterations: 600000 }, pk, 256));
+      ikm = concat(master, pb);
+    }
+    const [e, t, p, m, l] = await Promise.all(['VS/enc', 'VS/token', 'VS/place', 'VS/mask', 'VS/len'].map((i) => hkdf(ikm, vaultId, i)));
+    return {
+      enc: await subtle.importKey('raw', e, 'AES-GCM', false, ['encrypt', 'decrypt']),
+      tok: await subtle.importKey('raw', t, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']),
+      mask: await subtle.importKey('raw', m, 'AES-CTR', false, ['encrypt']),
+      place: p, lenMask: l.slice(0, 4),
+    };
+  }
+  async function keystream(keys, ci, n) {
+    const ctr = new Uint8Array(16); ctr[0] = 0x56; ctr[1] = ci;
+    return new Uint8Array(await subtle.encrypt({ name: 'AES-CTR', counter: ctr, length: 64 }, keys.mask, new Uint8Array(n)));
+  }
+  const xorInto = (a, b) => { for (let i = 0; i < a.length; i++) a[i] ^= b[i]; return a; };
+  async function hmac16(key, data) { return new Uint8Array(await subtle.sign('HMAC', key, data)).slice(0, 16); }
+
+  async function deflate(bytes) {
+    if (typeof CompressionStream === 'undefined') return null;
+    try { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); } catch (e) { return null; }
+  }
+  async function inflate(bytes) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); }
+
+  /* ---------- keyed PRNG (xoshiro128**) for placement order ---------- */
+  function prng(seed) {
+    let a = getU32(seed, 0) || 1, b = getU32(seed, 4) || 2, c = getU32(seed, 8) || 3, d = getU32(seed, 12) || 4;
+    return () => {
+      const r = Math.imul(((Math.imul(b, 5) << 7) | (Math.imul(b, 5) >>> 25)), 9) >>> 0;
+      const t = b << 9; c ^= a; d ^= b; b ^= c; a ^= d; c ^= t; d = (d << 11) | (d >>> 21);
+      return r;
+    };
+  }
+  /** Order indices: highest bucket first, keyed shuffle inside each bucket. bucket[i]=255 excludes i. */
+  function keyedOrder(bucket, seed) {
+    const counts = new Uint32Array(17);
+    for (let i = 0; i < bucket.length; i++) if (bucket[i] !== 255) counts[bucket[i] + 1]++;
+    for (let b = 1; b <= 16; b++) counts[b] += counts[b - 1];
+    const total = counts[16], order = new Uint32Array(total), fill = counts.slice(0, 16);
+    for (let i = 0; i < bucket.length; i++) { const b = bucket[i]; if (b !== 255) order[fill[b]++] = i; }
+    const rnd = prng(seed);
+    for (let b = 0; b < 16; b++) {
+      const lo = counts[b], hi = counts[b + 1];
+      for (let i = hi - 1; i > lo; i--) { const j = lo + (rnd() % (i - lo + 1)); const t = order[i]; order[i] = order[j]; order[j] = t; }
+    }
+    return order;
+  }
+
+  /* =====================================================================
+     CARRIER ENGINES
+     ===================================================================== */
+  const EXT = (name) => (String(name).split('.').pop() || '').toLowerCase();
+  const KIND = {
+    picture: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif'],
+    song: ['wav', 'mp3', 'm4a', 'aac', 'ogg', 'oga', 'flac', 'opus', 'weba'],
+    video: ['mp4', 'm4v', 'mov', 'webm', 'mkv', 'avi'],
+    document: ['pdf', 'docx', 'xlsx', 'pptx'],
+  };
+  function kindOf(file) {
+    const e = EXT(file.name);
+    for (const [k, list] of Object.entries(KIND)) if (list.includes(e)) return k;
+    if (file.type.startsWith('image/')) return 'picture';
+    if (file.type.startsWith('audio/')) return 'song';
+    if (file.type.startsWith('video/')) return 'video';
+    return null;
+  }
+  const baseName = (n) => String(n).replace(/\.[^.]+$/, '');
+
+  /* ---- pictures & memes: adaptive LSB in opaque RGB values, PNG out ---- */
+  async function imageDataFrom(blobOrFile) {
+    let bmp;
+    try { bmp = await createImageBitmap(blobOrFile, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' }); }
+    catch (e) { bmp = await createImageBitmap(blobOrFile); }
+    const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
+    return { canvas: c, ctx: x, img: x.getImageData(0, 0, c.width, c.height) };
+  }
+  function pictureBuckets(img, bits) {
+    const { data, width: w, height: h } = img, n = w * h, bucket = new Uint8Array(n);
+    const v = (p, ch) => (data[p * 4 + 3] === 255 ? data[p * 4 + ch] >> bits : 0);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = y * w + x;
+      if (data[p * 4 + 3] !== 255) { bucket[p] = 255; continue; }
+      let t = 0;
+      for (let ch = 0; ch < 3; ch++) {
+        const c = v(p, ch);
+        if (x > 0) t += Math.abs(c - v(p - 1, ch)); if (x < w - 1) t += Math.abs(c - v(p + 1, ch));
+        if (y > 0) t += Math.abs(c - v(p - w, ch)); if (y < h - 1) t += Math.abs(c - v(p + w, ch));
+      }
+      bucket[p] = 15 - Math.min(15, t >> (4 - bits));
+    }
+    return bucket;
+  }
+  const picture = {
+    capacity(ctx) { let usable = 0; const d = ctx.img.data; for (let i = 3; i < d.length; i += 4) if (d[i] === 255) usable++; return Math.floor(usable * 3 * ctx.bits / 8); },
+    order(ctx, keys) { if (!ctx.order) ctx.order = keyedOrder(pictureBuckets(ctx.img, ctx.bits), keys.place); return ctx.order; },
+    write(ctx, keys, bytes) {
+      const order = picture.order(ctx, keys), d = ctx.img.data, bits = ctx.bits, mask = (1 << bits) - 1;
+      let slot = 0;
+      const put = (val) => { const p = order[(slot / 3) | 0], ch = slot % 3, i = p * 4 + ch; d[i] = (d[i] & ~mask) | val; slot++; };
+      for (let i = 0; i < bytes.length; i++) for (let s = 8 - bits; s >= 0; s -= bits) put((bytes[i] >> s) & mask);
+    },
+    read(ctx, keys, n) {
+      const order = picture.order(ctx, keys), d = ctx.img.data, bits = ctx.bits, mask = (1 << bits) - 1, out = new Uint8Array(n);
+      const max = order.length * 3; let slot = 0;
+      for (let i = 0; i < n; i++) { let b = 0; for (let s = 8 - bits; s >= 0; s -= bits) { if (slot >= max) return null; const p = order[(slot / 3) | 0]; b |= (d[p * 4 + slot % 3] & mask) << s; slot++; } out[i] = b; }
+      return out;
+    },
+    async output(ctx) { ctx.ctx.putImageData(ctx.img, 0, 0); return await new Promise((ok) => ctx.canvas.toBlob(ok, 'image/png')); },
+  };
+
+  /* ---- songs: adaptive LSB in 16-bit PCM samples, WAV out ---- */
+  function parseWav(buf) {
+    const b = new Uint8Array(buf), dv = new DataView(buf);
+    if (td.decode(b.slice(0, 4)) !== 'RIFF' || td.decode(b.slice(8, 12)) !== 'WAVE') return null;
+    let o = 12, fmt = null, data = null;
+    while (o + 8 <= b.length) {
+      const id = td.decode(b.slice(o, o + 4)), sz = dv.getUint32(o + 4, true);
+      if (id === 'fmt ') fmt = { format: dv.getUint16(o + 8, true), channels: dv.getUint16(o + 10, true), rate: dv.getUint32(o + 12, true), bitsPer: dv.getUint16(o + 22, true) };
+      if (id === 'data') { data = { off: o + 8, len: Math.min(sz, b.length - o - 8) }; break; }
+      o += 8 + sz + (sz & 1);
+    }
+    if (!fmt || !data || fmt.bitsPer !== 16 || (fmt.format !== 1 && fmt.format !== 0xfffe)) return null;
+    const samples = new Int16Array(buf.slice(data.off, data.off + (data.len & ~1)));
+    return { channels: fmt.channels, rate: fmt.rate, samples };
+  }
+  async function decodeToPcm(file) {
+    const buf = await file.arrayBuffer();
+    const w = parseWav(buf.slice(0)); if (w) return w;
+    const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const ab = await new AC(2, 1, 44100).decodeAudioData(buf);
+    const ch = Math.min(2, ab.numberOfChannels), len = ab.length, out = new Int16Array(len * ch);
+    const chans = Array.from({ length: ch }, (_, i) => ab.getChannelData(i));
+    for (let i = 0; i < len; i++) for (let c = 0; c < ch; c++) { const s = Math.max(-1, Math.min(1, chans[c][i])); out[i * ch + c] = Math.round(s * 32767); }
+    return { channels: ch, rate: ab.sampleRate, samples: out };
+  }
+  function writeWav(pcm) {
+    const dataLen = pcm.samples.length * 2, buf = new ArrayBuffer(44 + dataLen), dv = new DataView(buf), b = new Uint8Array(buf);
+    b.set(te.encode('RIFF'), 0); dv.setUint32(4, 36 + dataLen, true); b.set(te.encode('WAVEfmt '), 8);
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, pcm.channels, true); dv.setUint32(24, pcm.rate, true);
+    dv.setUint32(28, pcm.rate * pcm.channels * 2, true); dv.setUint16(32, pcm.channels * 2, true); dv.setUint16(34, 16, true);
+    b.set(te.encode('data'), 36); dv.setUint32(40, dataLen, true); new Int16Array(buf, 44).set(pcm.samples);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+  const song = {
+    capacity(ctx) { return Math.floor(ctx.pcm.samples.length * ctx.bits / 8); },
+    order(ctx, keys) {
+      if (ctx.order) return ctx.order;
+      const s = ctx.pcm.samples, bucket = new Uint8Array(s.length);
+      for (let i = 0; i < s.length; i++) { const a = Math.abs(s[i] >> ctx.bits); bucket[i] = 15 - Math.min(15, a ? 31 - Math.clz32(a) : 0); }
+      return (ctx.order = keyedOrder(bucket, keys.place));
+    },
+    write(ctx, keys, bytes) {
+      const order = song.order(ctx, keys), s = ctx.pcm.samples, bits = ctx.bits, mask = (1 << bits) - 1; let k = 0;
+      for (let i = 0; i < bytes.length; i++) for (let sh = 8 - bits; sh >= 0; sh -= bits) { const p = order[k++]; s[p] = (s[p] & ~mask) | ((bytes[i] >> sh) & mask); }
+    },
+    read(ctx, keys, n) {
+      const order = song.order(ctx, keys), s = ctx.pcm.samples, bits = ctx.bits, mask = (1 << bits) - 1, out = new Uint8Array(n); let k = 0;
+      for (let i = 0; i < n; i++) { let b = 0; for (let sh = 8 - bits; sh >= 0; sh -= bits) { if (k >= order.length) return null; b |= (s[order[k++]] & mask) << sh; } out[i] = b; }
+      return out;
+    },
+    async output(ctx) { return writeWav(ctx.pcm); },
+  };
+
+  /* ---- videos & documents: sealed data block the player/reader ignores ---- */
+  const OFFICE_PART = 'customXml/item90.bin';
+  const container = {
+    capacity() { return 200 * 1048576; },
+    async attach(ctx, keys, blob) {
+      const e = EXT(ctx.file.name);
+      if (['docx', 'xlsx', 'pptx'].includes(e)) {
+        const zip = await JSZip.loadAsync(await ctx.file.arrayBuffer());
+        zip.file(OFFICE_PART, blob);
+        return await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: ctx.file.type || 'application/octet-stream' });
+      }
+      const len = new Uint8Array(4); putU32(len, 0, blob.length); xorInto(len, keys.lenMask);
+      if (['mp4', 'm4v', 'mov'].includes(e)) {
+        const head = new Uint8Array(8); putU32(head, 0, 8 + blob.length + 4); head.set(te.encode('free'), 4);
+        return new Blob([ctx.file, head, blob, len], { type: ctx.file.type });
+      }
+      return new Blob([ctx.file, blob, len], { type: ctx.file.type });
+    },
+    async extract(file, keys) {
+      const e = EXT(file.name);
+      if (['docx', 'xlsx', 'pptx'].includes(e)) {
+        const zip = await JSZip.loadAsync(await file.arrayBuffer()); const f = zip.file(OFFICE_PART);
+        return f ? await f.async('uint8array') : null;
+      }
+      const sz = file.size; if (sz < 12) return null;
+      const tail = new Uint8Array(await file.slice(sz - 4).arrayBuffer()); xorInto(tail, keys.lenMask);
+      const n = getU32(tail, 0); if (n < 8 || n > sz - 4) return null;
+      return new Uint8Array(await file.slice(sz - 4 - n, sz - 4).arrayBuffer());
+    },
+  };
+
+  /* =====================================================================
+     VAULT FORMAT
+     ticket (QR) = ver | flags | count | 0 | created u32 | expires u32 | vaultId[8] | key[32]   (52 bytes)
+     flags: bit0 passphrase, bit1 split, bit2 two-bit placement
+     carrier blob = "VSv1" | len u32 | tokens…    (then whitened with AES-CTR per carrier index)
+     token = idx u32 | total u32 | len u32 | data | HMAC-SHA256(vaultId|idx|total|len|data)[16]
+     ===================================================================== */
+  const MAGIC = te.encode('VSv1');
+  const LOCK_NOTICE = 'This Vault QR code is locked for a specific period.';
+  const qrPayload = (ticket, expires, years) => `${LOCK_NOTICE} Only Vault Secure can open it, until ${new Date(expires).toISOString().slice(0, 16).replace('T', ' ')} UTC${years ? ', with check-ins every 6 months from year 2' : ''}.\n${ticket}`;
+
+  /* =====================================================================
+     VAULT REGISTRY, CHECK-INS AND BEEP (kept on this device only; no keys stored)
+     ===================================================================== */
+  const GRACE = 30 * 86400000;
+  /** Installed phone app only: schedule system notifications for this vault's check-ins. */
+  const syncNative = (rec) => { try { if (window.NativeShim && window.NativeShim.syncVault) window.NativeShim.syncVault(rec); } catch (e) { /* not available */ } };
+  const REG_KEY = 'vaultsecure.vaults';
+  const reg = {
+    all() { try { return JSON.parse(localStorage.getItem(REG_KEY) || '[]'); } catch (e) { return reg.mem || []; } },
+    save(list) { reg.mem = list; try { localStorage.setItem(REG_KEY, JSON.stringify(list)); } catch (e) { /* storage blocked: keep in memory */ } },
+    get(id) { return reg.all().find((v) => v.id === id) || null; },
+    put(rec) { const l = reg.all().filter((v) => v.id !== rec.id); l.unshift(rec); reg.save(l); },
+  };
+  /** Works out where a vault stands now, applying the no-answer rule to overdue check-ins. */
+  function vaultStatus(rec, persist = true) {
+    const t = now(); let changed = false, due = null;
+    if (!rec.terminated) {
+      for (const c of rec.checkins || []) {
+        if (c > t) break;
+        if (rec.answers[c]) continue;
+        if (rec.autoRenew) { rec.answers[c] = 'auto'; changed = true; continue; }
+        if (t > c + GRACE) {
+          if (rec.policy === 'terminate') { rec.terminated = c + GRACE; rec.reason = 'No answer to the check-in of ' + fmtDate(c); changed = true; break; }
+          rec.answers[c] = 'renewed (no answer)'; changed = true; continue;
+        }
+        due = c; break;
+      }
+    }
+    if (changed && persist) { reg.put(rec); syncNative(rec); }
+    const next = (rec.checkins || []).find((c) => c > t) || null;
+    const state = rec.terminated ? 'terminated' : t >= rec.expires ? 'expired' : due ? 'due' : 'open';
+    return { state, due, next };
+  }
+  const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const yearMark = (rec, c) => ((c - rec.created) / (365.25 * 86400000)).toFixed(1).replace(/\.0$/, '');
+
+  let actx = null, pendingBeep = false;
+  const muted = () => { try { return localStorage.getItem('vaultsecure.mute') === '1'; } catch (e) { return false; } };
+  function beep(force) {
+    if (muted() && !force) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') { actx.resume(); if (actx.state === 'suspended') { pendingBeep = true; return; } }
+      let t0 = actx.currentTime + 0.02;
+      for (const [f, d, gap] of [[988, 0.16, 0.08], [988, 0.16, 0.08], [1319, 0.34, 0]]) {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(actx.destination);
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+        o.start(t0); o.stop(t0 + d + 0.02); t0 += d + gap;
+      }
+      pendingBeep = false;
+    } catch (e) { pendingBeep = true; }
+  }
+  // Browsers only allow sound after a tap or key press, so a beep that was blocked plays on the next one.
+  ['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { if (pendingBeep) beep(); }, true));
+
+  let lastBeepAt = 0, confirmTerm = null;
+  function renderNotices() {
+    const dueList = reg.all().map((r) => ({ r, st: vaultStatus(r) })).filter((x) => x.st.state === 'due');
+    const box = $('notices');
+    box.hidden = !dueList.length;
+    box.innerHTML = dueList.map(({ r, st }) => `<div class="notice">
+        <div class="bell" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zm-2 15a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+        <div><h3>Check-in: ${esc(r.nick)}</h3><p>Year ${yearMark(r, st.due)} check-in, ${fmtDate(st.due)}. Choose by ${fmtDate(st.due + GRACE)}, or Vault Secure will ${r.policy === 'terminate' ? 'terminate this vault' : 'renew it for you'}.</p></div>
+        <div class="row">
+          <button class="btn primary" type="button" data-act="renew" data-id="${r.id}">Renew 6 months</button>
+          <button class="btn" type="button" data-act="auto" data-id="${r.id}">Auto-renew from now on</button>
+          ${confirmTerm === r.id ? `<button class="btn danger" type="button" data-act="terminate" data-id="${r.id}">Yes, terminate for good</button><button class="btn" type="button" data-act="cancel" data-id="${r.id}">Keep it</button>` : `<button class="btn" type="button" data-act="ask-terminate" data-id="${r.id}">Terminate</button>`}
+        </div></div>`).join('');
+    bindVaultActions(box);
+    if (dueList.length && now() - lastBeepAt > 60000) { lastBeepAt = now(); beep(); }
+  }
+  function vaultAction(id, act) {
+    const r = reg.get(id); if (!r) return;
+    const st = vaultStatus(r);
+    if (act === 'renew' && st.due) { r.answers[st.due] = 'renewed'; toast('Renewed until the next check-in'); }
+    if (act === 'auto') { r.autoRenew = true; if (st.due) r.answers[st.due] = 'auto'; toast('Automatic renewal is on'); }
+    if (act === 'manual') { r.autoRenew = false; toast('Check-ins will ask you again'); }
+    if (act === 'ask-terminate') { confirmTerm = id; refreshVaultUi(); return; }
+    if (act === 'cancel') { confirmTerm = null; refreshVaultUi(); return; }
+    if (act === 'terminate') { r.terminated = now(); r.reason = 'Terminated by you'; toast('Vault terminated. Destroy its QR code.'); }
+    if (act === 'ics') { offer('vault-checkins-' + r.id.slice(0, 6) + '.ics', new Blob([icsFor(r)], { type: 'text/calendar' })); return; }
+    confirmTerm = null; reg.put(r); syncNative(r); refreshVaultUi();
+  }
+  function bindVaultActions(root) { root.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => vaultAction(b.dataset.id, b.dataset.act)); }
+  function renderVaults() {
+    const list = reg.all();
+    $('vlist').innerHTML = list.length ? list.map((r) => {
+      const st = vaultStatus(r), left = r.expires - now();
+      const pill = { open: r.autoRenew ? ['auto', 'Open · auto-renew'] : ['open', 'Open'], due: ['due', 'Check-in due'], terminated: ['gone', 'Terminated'], expired: ['gone', 'Expired'] }[st.state];
+      const sched = (r.checkins || []).map((c) => (r.terminated && !r.answers[c] && c + GRACE === r.terminated ? `<span class="missed" title="No answer">✕ ${fmtDate(c)}</span>` : `<span class="${r.answers[c] ? 'done' : !r.terminated && c === (st.due || st.next) ? 'next' : ''}" title="${esc(r.answers[c] || '')}">${r.answers[c] ? '✓ ' : ''}${fmtDate(c)}</span>`)).join('');
+      return `<article class="vault"><div style="min-width:0"><h3>${esc(r.nick)}</h3>
+          <div class="meta"><span>Made <b>${fmtDate(r.created)}</b></span><span>Term <b>${r.years ? r.years + ' years' : r.ttlLabel}</b></span><span>${st.state === 'terminated' ? 'Ended <b>' + fmtDate(r.terminated) + '</b>' : 'Ends <b>' + fmtDate(r.expires) + '</b>'}</span>
+          ${st.state === 'open' || st.state === 'due' ? `<span>Time left <b data-left="${r.id}">${countdown(left)}</b></span>` : ''}${st.next && st.state !== 'terminated' ? `<span>Next check-in <b>${fmtDate(st.next)}</b></span>` : ''}</div>
+          ${r.reason && st.state === 'terminated' ? `<div class="meta" style="margin-top:4px">${esc(r.reason)}</div>` : ''}</div>
+        <span class="pill ${pill[0]}">${pill[1]}</span>
+        ${sched ? `<div class="sched" style="grid-column:1/-1">${sched}</div>` : ''}
+        ${st.state === 'open' || st.state === 'due' ? `<div class="row">
+          ${st.state === 'due' ? `<button class="btn primary small" type="button" data-act="renew" data-id="${r.id}">Renew 6 months</button>` : ''}
+          ${r.years ? (r.autoRenew ? `<button class="btn small" type="button" data-act="manual" data-id="${r.id}">Ask me at each check-in</button>` : `<button class="btn small" type="button" data-act="auto" data-id="${r.id}">Auto-renew from now on</button>`) : ''}
+          ${r.years ? `<button class="btn small" type="button" data-act="ics" data-id="${r.id}">Calendar reminders</button>` : ''}
+          ${confirmTerm === r.id ? `<button class="btn danger small" type="button" data-act="terminate" data-id="${r.id}">Yes, terminate for good</button><button class="btn small" type="button" data-act="cancel" data-id="${r.id}">Keep it</button>` : `<button class="btn small" type="button" data-act="ask-terminate" data-id="${r.id}">Terminate now</button>`}
+        </div>` : ''}</article>`;
+    }).join('') : '<div class="note info">No vaults yet. Vaults you lock on this device appear here with their timers and check-ins.</div>';
+    bindVaultActions($('vlist'));
+  }
+  function refreshVaultUi() { renderNotices(); renderVaults(); }
+  function icsFor(r) {
+    const stamp = (t) => new Date(t).toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+    const ev = (t, title, body, i) => ['BEGIN:VEVENT', `UID:${r.id}-${i}@vaultsecure`, `DTSTAMP:${stamp(now())}`, `DTSTART:${stamp(t)}`, `DTEND:${stamp(t + 1800000)}`, `SUMMARY:${title}`, `DESCRIPTION:${body}`,
+      'BEGIN:VALARM', 'ACTION:AUDIO', 'TRIGGER:PT0M', 'END:VALARM', 'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT'];
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Vault Secure//Check-ins//EN', 'CALSCALE:GREGORIAN'];
+    (r.checkins || []).forEach((c, i) => lines.push(...ev(c, `Vault Secure check-in: ${r.nick}`, 'Open Vault Secure > My vaults and choose Renew\\, Auto-renew or Terminate. You have 30 days.', i)));
+    lines.push(...ev(r.expires - 30 * 86400000, `Vault Secure: ${r.nick} ends in 30 days`, 'This vault stops opening in 30 days. Make a new vault to keep the file longer.', 'end'));
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
+  }
+  const TTL = { '24h': [1, 'day'], '7d': [7, 'day'], '31d': [31, 'day'], '3m': [3, 'month'], '6m': [6, 'month'], '366d': [366, 'day'] };
+  const addMonths = (t, m) => { const d = new Date(t); const day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + m); d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); return d.getTime(); };
+  /** Check-ins: every 6 months from month 24, strictly before the end of the term. */
+  function checkinsFor(created, expires, years) {
+    if (!years) return [];
+    const out = []; for (let m = 24; ; m += 6) { const t = addMonths(created, m); if (t >= expires - 86400000) break; out.push(t); }
+    return out;
+  }
+  function expiryFrom(ttl, from = new Date(), years = 0) {
+    if (ttl === 'long') return new Date(addMonths(from.getTime(), 12 * years));
+    const [n, u] = TTL[ttl], d = new Date(from.getTime());
+    if (u === 'day') d.setTime(d.getTime() + n * 86400000); else d.setMonth(d.getMonth() + n);
+    return d;
+  }
+  function packTicket(t) {
+    const b = new Uint8Array(52); b[0] = 1; b[1] = (t.pass ? 1 : 0) | (t.split ? 2 : 0) | (t.bits === 2 ? 4 : 0); b[2] = t.count; b[3] = t.years || 0; if (t.policy === 'terminate') b[1] |= 8;
+    putU32(b, 4, Math.floor(t.created / 1000)); putU32(b, 8, Math.floor(t.expires / 1000)); b.set(t.vaultId, 12); b.set(t.key, 20);
+    return b;
+  }
+  function parseTicket(text) {
+    const m = String(text).trim().match(/VSEC1-([A-Za-z0-9_-]{60,80})/);
+    if (!m) throw new Error('That is not a Vault Secure key. It should start with VSEC1-');
+    const b = b64u.dec(m[1]); if (b.length !== 52 || b[0] !== 1) throw new Error('This key is damaged or from another version.');
+    return { raw: b, years: b[3], policy: b[1] & 8 ? 'terminate' : 'renew', id: b64u.enc(b.slice(12, 20)), pass: !!(b[1] & 1), split: !!(b[1] & 2), bits: b[1] & 4 ? 2 : 1, count: b[2], created: getU32(b, 4) * 1000, expires: getU32(b, 8) * 1000, vaultId: b.slice(12, 20), key: b.slice(20, 52), aad: b.slice(0, 20), text: 'VSEC1-' + m[1] };
+  }
+  async function makeTokens(keys, vaultId, cipher, size) {
+    const total = Math.ceil(cipher.length / size), out = [];
+    for (let i = 0; i < total; i++) {
+      const data = cipher.slice(i * size, (i + 1) * size), head = new Uint8Array(12);
+      putU32(head, 0, i); putU32(head, 4, total); putU32(head, 8, data.length);
+      out.push(concat(head, data, await hmac16(keys.tok, concat(vaultId, head, data))));
+    }
+    return out;
+  }
+  async function parseTokens(keys, vaultId, body, into) {
+    let o = 0, good = 0, bad = 0, total = null;
+    while (o + 28 <= body.length) {
+      const head = body.slice(o, o + 12), n = getU32(head, 8);
+      if (o + 12 + n + 16 > body.length) break;
+      const data = body.slice(o + 12, o + 12 + n), tag = body.slice(o + 12 + n, o + 28 + n);
+      const want = await hmac16(keys.tok, concat(vaultId, head, data));
+      if (want.every((x, i) => x === tag[i])) { into.set(getU32(head, 0), data); total = getU32(head, 4); good++; } else bad++;
+      o += 28 + n;
+    }
+    return { good, bad, total };
+  }
+
+  /* ---------- downloads (claude.ai capability, or a normal link elsewhere) ---------- */
+  const SAFE_EXT = new Set(['gif', 'png', 'jpg', 'jpeg', 'webp', 'mp4', 'webm', 'txt', 'json', 'md', 'docx', 'pptx', 'epub', 'csv', 'html', 'svg', 'pdf', 'xlsx', 'zip']);
+  let dlPromise = null;
+  const getDownloads = () => (dlPromise ||= (window.claude && window.claude.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null)));
+  async function offer(filename, blob) {
+    if (window.NativeShim && window.NativeShim.native) {
+      try { if (await window.NativeShim.saveFile(filename, blob)) { toast('Saved'); return; } } catch (e) { toast('Could not save: ' + (e.message || e)); return; }
+    }
+    const dl = await getDownloads();
+    if (dl) {
+      let name = filename, data = blob;
+      if (!SAFE_EXT.has(EXT(filename))) { const z = new JSZip(); z.file(filename, blob); data = await z.generateAsync({ type: 'blob', compression: 'STORE' }); name = filename + '.zip'; }
+      try { await dl.save({ filename: name, data }); toast(name === filename ? 'Saved' : 'Saved inside ' + name); }
+      catch (e) { if (e && e.code !== 'declined') toast(e && e.code === 'too_large' ? 'File too large to save here' : 'Saving is not available here'); }
+      return;
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  }
+
+  /* =====================================================================
+     HIDE FLOW
+     ===================================================================== */
+  const H = { secret: null, slots: [null, null, null], result: null };
+  const SLOT_LABEL = ['Carrier A', 'Carrier B', 'Carrier C'];
+
+  function samplePicture() {
+    const c = document.createElement('canvas'); c.width = 1400; c.height = 900; const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 1400, 900); g.addColorStop(0, '#0e4d64'); g.addColorStop(0.5, '#2a9d8f'); g.addColorStop(1, '#e9c46a'); x.fillStyle = g; x.fillRect(0, 0, 1400, 900);
+    let s = 7; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 900; i++) { x.fillStyle = `hsla(${(r() * 60 + 160) | 0},60%,${(r() * 40 + 40) | 0}%,.35)`; x.beginPath(); x.arc(r() * 1400, r() * 900, r() * 60 + 6, 0, 7); x.fill(); }
+    const id = x.getImageData(0, 0, 1400, 900); for (let i = 0; i < id.data.length; i += 4) { const n = (r() - 0.5) * 18; id.data[i] += n; id.data[i + 1] += n; id.data[i + 2] += n; } x.putImageData(id, 0, 0);
+    return new Promise((ok) => c.toBlob((b) => ok(new File([b], 'harbour-sunset.png', { type: 'image/png' })), 'image/png'));
+  }
+
+  function renderSecret() {
+    const el = $('secretArea');
+    if (!H.secret) {
+      el.innerHTML = `<div class="cols2"><label class="drop" id="secDrop" for="secIn"><b>Drop the file to hide</b><span>Up to the space your carriers offer</span><input id="secIn" type="file" class="sr"></label>
+        <div style="display:grid;gap:8px;align-content:center"><span class="hint" style="margin:0">Just trying it out?</span><button class="btn" id="secSample" type="button">Use a sample note</button></div></div>`;
+      wireDrop($('secDrop'), $('secIn'), (fs) => { H.secret = fs[0]; renderSecret(); updateCap(); });
+      $('secSample').onclick = () => { H.secret = new File([`Vault Secure test note\nCreated ${new Date().toISOString()}\n\nIf you can read this, the reveal worked.\n`], 'secret-note.txt', { type: 'text/plain' }); renderSecret(); updateCap(); };
+      return;
+    }
+    el.innerHTML = `<div class="filecard"><span class="ic">${esc(EXT(H.secret.name) || 'file')}</span><div style="min-width:0"><div class="nm">${esc(H.secret.name)}</div><div class="mt">${fmtSize(H.secret.size)}</div></div><button class="btn small" id="secClear" type="button">Change</button></div>`;
+    $('secClear').onclick = () => { H.secret = null; renderSecret(); updateCap(); };
+  }
+
+  async function loadCarrier(file, i) {
+    const kind = kindOf(file);
+    if (!kind) { toast('That file type cannot carry data. Use a song, picture, video, PDF, Word, Excel or PowerPoint file.'); return; }
+    const slot = { file, kind, meme: false, top: '', bottom: '', status: 'Reading…' };
+    H.slots[i] = slot; renderSlots();
+    try {
+      if (kind === 'picture') { slot.pic = await imageDataFrom(file); slot.thumb = URL.createObjectURL(file); slot.dims = slot.pic.img.width + '×' + slot.pic.img.height; }
+      if (kind === 'song') { slot.pcm = await decodeToPcm(file); slot.dims = (slot.pcm.samples.length / slot.pcm.channels / slot.pcm.rate).toFixed(0) + ' s · ' + slot.pcm.rate + ' Hz'; }
+      slot.status = '';
+    } catch (e) { H.slots[i] = null; toast('Could not read ' + file.name + '. Try another file.'); }
+    renderSlots(); updateCap();
+  }
+  const bitsNow = () => +document.querySelector('input[name=bits]:checked').value;
+  function slotCapacity(s) {
+    if (!s || s.status) return 0;
+    if (s.kind === 'picture') { let u = 0; const d = s.pic.img.data; for (let i = 3; i < d.length; i += 4) if (d[i] === 255) u++; return Math.floor(u * 3 * bitsNow() / 8) - 8; }
+    if (s.kind === 'song') return Math.floor(s.pcm.samples.length * bitsNow() / 8) - 8;
+    return container.capacity();
+  }
+  function renderSlots() {
+    $('slots').innerHTML = H.slots.map((s, i) => {
+      if (!s) return `<div class="slot"><h3>${SLOT_LABEL[i]}</h3><label class="drop" for="slotIn${i}" data-slot="${i}"><b>Song, picture, meme, video or document</b><span>Drop or tap to choose</span><input id="slotIn${i}" type="file" class="sr" accept="image/*,audio/*,video/*,.pdf,.docx,.xlsx,.pptx"></label>
+        ${i === 0 ? '<button class="btn small" type="button" id="samplePic">Use a sample picture</button>' : ''}</div>`;
+      const cap = slotCapacity(s);
+      const kindName = s.kind === 'picture' ? (s.meme ? 'Meme' : 'Picture') : s.kind === 'song' ? 'Song' : s.kind === 'video' ? 'Video' : 'Document';
+      const outExt = s.kind === 'picture' ? 'PNG' : s.kind === 'song' ? 'WAV' : EXT(s.file.name).toUpperCase();
+      return `<div class="slot"><h3>${SLOT_LABEL[i]} · ${kindName}</h3>
+        ${s.kind === 'picture' && s.thumb ? `<img class="thumb" src="${s.thumb}" alt="">` : ''}
+        <div class="filecard" style="padding:8px"><span class="ic">${esc(EXT(s.file.name))}</span><div style="min-width:0"><div class="nm" style="font-size:14px">${esc(s.file.name)}</div><div class="mt">${s.status || esc(s.dims || fmtSize(s.file.size))}</div></div><button class="btn small" type="button" data-rm="${i}" aria-label="Remove">✕</button></div>
+        <div class="cap">Holds <b>${s.status ? '…' : s.kind === 'video' || s.kind === 'document' ? 'any size' : fmtSize(Math.max(0, cap))}</b> · saves as ${outExt}</div>
+        ${s.kind === 'picture' ? `<label class="row" style="gap:8px;font-size:14px"><input type="checkbox" data-meme="${i}" ${s.meme ? 'checked' : ''}> Make it a meme (add captions)</label>
+          ${s.meme ? `<div class="memebox"><input id="memeTop${i}" data-mt="${i}" value="${esc(s.top)}" placeholder="Top text"><input id="memeBot${i}" data-mb="${i}" value="${esc(s.bottom)}" placeholder="Bottom text"></div>` : ''}` : ''}
+        ${s.kind === 'song' && EXT(s.file.name) !== 'wav' ? '<div class="cap">Converted to WAV so no tokens are lost.</div>' : ''}
+        ${s.kind === 'video' || s.kind === 'document' ? '<div class="cap">Tokens ride in a sealed block the player or reader skips.</div>' : ''}
+      </div>`;
+    }).join('');
+    document.querySelectorAll('[data-slot]').forEach((d) => { const i = +d.dataset.slot; wireDrop(d, $('slotIn' + i), (fs) => loadCarrier(fs[0], i)); });
+    document.querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => { H.slots[+b.dataset.rm] = null; renderSlots(); updateCap(); });
+    document.querySelectorAll('[data-meme]').forEach((b) => b.onchange = () => { H.slots[+b.dataset.meme].meme = b.checked; renderSlots(); });
+    document.querySelectorAll('[data-mt]').forEach((b) => b.oninput = () => { H.slots[+b.dataset.mt].top = b.value; });
+    document.querySelectorAll('[data-mb]').forEach((b) => b.oninput = () => { H.slots[+b.dataset.mb].bottom = b.value; });
+    if ($('samplePic')) $('samplePic').onclick = async () => loadCarrier(await samplePicture(), 0);
+  }
+  function estimateCipher() { return H.secret ? H.secret.size + 300 : 0; }
+  function updateCap() {
+    const carriers = H.slots.filter((s) => s && !s.status);
+    const mode = document.querySelector('input[name=mode]:checked').value;
+    const need = estimateCipher() * (mode === 'copies' ? 1 : 1) * 1.02 + carriers.length * 64;
+    const caps = carriers.map(slotCapacity);
+    const have = mode === 'copies' ? (caps.length ? Math.min(...caps) : 0) : caps.reduce((a, b) => a + b, 0);
+    const pct = have ? Math.min(100, (need / have) * 100) : 0;
+    $('capMeter').querySelector('b').style.width = pct + '%';
+    $('capMeter').classList.toggle('over', need > have && carriers.length > 0);
+    $('capTxt').textContent = carriers.length ? `${fmtSize(Math.round(need))} of ${have >= 100 * 1048576 ? 'unlimited' : fmtSize(have)}${mode === 'copies' ? ' (smallest carrier)' : ''}` : 'Add carriers';
+    let why = '';
+    if (!H.secret) why = 'Add the file to hide.'; else if (!carriers.length) why = 'Add at least one carrier.'; else if (need > have) why = mode === 'copies' ? 'One carrier is too small to hold a full copy. Use a bigger picture or song, or choose Split.' : 'The carriers are too small. Add a longer song, a bigger picture, or a video or document.';
+    $('lockBtn').disabled = !!why || H.busy; $('lockWhy').textContent = why;
+  }
+  function ttlNow() { return document.querySelector('input[name=ttl]:checked').value; }
+  const yearsNow = () => (ttlNow() === 'long' ? +$('yearsSel').value : 0);
+  const policyNow = () => document.querySelector('input[name=policy]:checked').value;
+  function echoTtl() {
+    const created = now(), d = expiryFrom(ttlNow(), new Date(created), yearsNow());
+    $('longBox').hidden = ttlNow() !== 'long';
+    $('ttlEcho').textContent = 'The key will stop working on ' + d.toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' }) + '.';
+    if (ttlNow() === 'long') { const cs = checkinsFor(created, d.getTime(), yearsNow()); $('schedEcho').innerHTML = cs.length ? cs.map((c) => `<span>${fmtDate(c)}</span>`).join('') + `<span>${cs.length} check-ins</span>` : '<span>No check-ins: the term ends at year 2. You get a reminder 30 days before.</span>'; }
+  }
+  $('yearsSel').innerHTML = Array.from({ length: 16 }, (_, i) => `<option value="${i + 2}">${i + 2} years</option>`).join('');
+
+  function drawMeme(slot) {
+    const { canvas: c, ctx: x } = slot.pic, w = c.width, h = c.height;
+    const size = Math.max(18, Math.round(w / 11));
+    x.textAlign = 'center'; x.lineJoin = 'round'; x.fillStyle = '#fff'; x.strokeStyle = '#000'; x.lineWidth = Math.max(2, size / 9);
+    x.font = `${size}px Anton, Impact, "Arial Black", sans-serif`;
+    const line = (t, y, base) => { if (!t.trim()) return; t = t.toUpperCase(); x.textBaseline = base; x.strokeText(t, w / 2, y, w * 0.94); x.fillText(t, w / 2, y, w * 0.94); };
+    line(slot.top, size * 0.25, 'top'); line(slot.bottom, h - size * 0.25, 'bottom');
+    slot.pic.img = x.getImageData(0, 0, w, h);
+  }
+
+  const log = (el, m) => { el.hidden = false; el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
+  async function lockAndHide() {
+    const L = $('hideLog'); L.textContent = ''; H.busy = true; updateCap(); $('hideResult').hidden = true;
+    try {
+      const carriers = H.slots.map((s, i) => s && { ...s, slotIndex: i }).filter(Boolean);
+      const split = document.querySelector('input[name=mode]:checked').value === 'split';
+      const bits = bitsNow(), pass = $('passHide').value, created = now(), years = yearsNow(), policy = policyNow(), expires = expiryFrom(ttlNow(), new Date(created), years).getTime();
+      const vaultId = rand(8), key = rand(32);
+      const ticketBytes = packTicket({ pass: !!pass, split, bits, count: carriers.length, created, expires, vaultId, key, years, policy });
+      log(L, `Vault ${b64u.enc(vaultId)} · ${carriers.length} carrier${carriers.length > 1 ? 's' : ''} · ${split ? 'split' : 'copies'}`);
+      log(L, pass ? 'Stretching passphrase (600,000 rounds)…' : 'Making keys…');
+      const keys = await deriveKeys(key, vaultId, pass);
+
+      const raw = new Uint8Array(await H.secret.arrayBuffer());
+      const z = await deflate(raw), useZ = z && z.length < raw.length * 0.95;
+      const meta = te.encode(JSON.stringify({ n: H.secret.name, t: H.secret.type || '', s: raw.length, z: useZ ? 1 : 0 }));
+      const ml = new Uint8Array(4); putU32(ml, 0, meta.length);
+      const plain = concat(ml, meta, useZ ? z : raw);
+      log(L, `Compressed ${fmtSize(raw.length)} → ${fmtSize(plain.length)}${useZ ? '' : ' (already compact)'}`);
+      const iv = rand(12);
+      const cipher = concat(iv, new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv, additionalData: ticketBytes.slice(0, 20), tagLength: 128 }, keys.enc, plain)));
+      log(L, `Encrypted with AES-256-GCM: ${fmtSize(cipher.length)}`);
+
+      const tokSize = Math.max(256, Math.min(4096, Math.ceil(cipher.length / (carriers.length * 3))));
+      const tokens = await makeTokens(keys, vaultId, cipher, tokSize);
+      log(L, `Cut into ${tokens.length} sealed tokens of up to ${fmtSize(tokSize)}`);
+
+      // prepare engines + capacities
+      for (const c of carriers) {
+        c.bits = bits;
+        if (c.kind === 'picture') { c.pic = await imageDataFrom(c.file); if (c.meme) drawMeme(c); c.eng = picture; c.ctxData = { ...c.pic, bits }; c.cap = picture.capacity(c.ctxData); }
+        else if (c.kind === 'song') { const p = await decodeToPcm(c.file); c.eng = song; c.ctxData = { pcm: p, bits }; c.cap = song.capacity(c.ctxData); }
+        else { c.eng = container; c.ctxData = { file: c.file }; c.cap = container.capacity(); }
+        c.tokens = []; c.used = 8;
+      }
+      if (split) {
+        let ci = 0;
+        for (const t of tokens) {
+          let tries = 0;
+          while (carriers[ci].used + t.length > carriers[ci].cap && tries < carriers.length) { ci = (ci + 1) % carriers.length; tries++; }
+          if (tries >= carriers.length) throw new Error('The carriers ran out of space. Add a bigger carrier.');
+          carriers[ci].tokens.push(t); carriers[ci].used += t.length; ci = (ci + 1) % carriers.length;
+        }
+      } else for (const c of carriers) { c.tokens = tokens.slice(); c.used = 8 + tokens.reduce((n, t) => n + t.length, 0); if (c.used > c.cap) throw new Error(c.file.name + ' is too small for a full copy.'); }
+
+      const outs = [];
+      for (let ci = 0; ci < carriers.length; ci++) {
+        const c = carriers[ci];
+        const body = concat(...c.tokens), head = new Uint8Array(8); head.set(MAGIC); putU32(head, 4, body.length);
+        const blob = xorInto(concat(head, body), await keystream(keys, ci, 8 + body.length));
+        log(L, `${c.kind === 'picture' && c.meme ? 'meme' : c.kind} ${c.file.name}: ${c.tokens.length} tokens, ${fmtSize(blob.length)}`);
+        await new Promise((r) => setTimeout(r, 0));
+        let outBlob, outName;
+        if (c.eng === container) { outBlob = await container.attach(c.ctxData, keys, blob); outName = c.file.name; }
+        else {
+          c.eng.write(c.ctxData, keys, blob);
+          outBlob = await c.eng.output(c.ctxData);
+          outName = baseName(c.file.name) + (c.kind === 'picture' ? (c.meme ? '-meme' : '') + '.png' : '.wav');
+          // self-check: read the carrier back the way Reveal will
+          const back = c.kind === 'picture' ? { ...(await imageDataFrom(outBlob)), bits } : { pcm: parseWav(await outBlob.arrayBuffer()), bits };
+          const chk = c.eng.read(back, keys, blob.length);
+          if (!chk || chk.some((v, i) => v !== blob[i])) throw new Error('Self-check failed on ' + outName + '. Try a different picture or song.');
+        }
+        outs.push({ name: outName, blob: outBlob, kind: c.kind === 'picture' && c.meme ? 'meme' : c.kind, tokens: c.tokens.length, size: outBlob.size });
+      }
+      log(L, 'Every carrier verified. Done.');
+      const nick = $('nickIn').value.trim() || 'Vault of ' + fmtDate(created);
+      const ttlLabel = document.querySelector('input[name=ttl]:checked').nextElementSibling.textContent;
+      const rec = { id: b64u.enc(vaultId), nick, created, expires, years, ttlLabel, policy, checkins: checkinsFor(created, expires, years), answers: {}, autoRenew: false, terminated: null };
+      reg.put(rec); syncNative(rec);
+      H.result = { ticket: 'VSEC1-' + b64u.enc(ticketBytes), created, expires, outs, tokens: tokens.length, split, pass: !!pass, secret: H.secret.name, years, rec };
+      showHideResult();
+    } catch (e) {
+      log(L, 'Stopped: ' + (e.message || e));
+      toast(e.message || 'Something went wrong');
+    }
+    H.busy = false; updateCap();
+  }
+
+  function drawQr(canvas, text, caption) {
+    const q = qrcode(0, 'M'); q.addData(text); q.make();
+    const n = q.getModuleCount(), x = canvas.getContext('2d'), W = canvas.width, pad = 36, cell = Math.floor((W - pad * 2) / n), off = Math.floor((W - cell * n) / 2);
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, canvas.height); x.fillStyle = '#0f1a20';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) x.fillRect(off + c * cell, off + r * cell, cell, cell);
+    x.font = '600 22px "IBM Plex Mono", monospace'; x.textAlign = 'center'; x.fillStyle = '#0f1a20';
+    x.fillText('VAULT SECURE KEY', W / 2, W + 20); x.font = '500 17px "IBM Plex Mono", monospace'; x.fillStyle = '#556670'; x.fillText(caption, W / 2, W + 48);
+  }
+  function countdown(ms) {
+    if (ms <= 0) return 'Expired';
+    const s = Math.floor(ms / 1000), y = Math.floor(s / 31557600);
+    if (y >= 1) { const dd = Math.floor((s - y * 31557600) / 86400); return `${y}<small>y</small> ${dd}<small>d</small>`; }
+    const d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60, sec = s % 60;
+    return `${d ? d + '<small>d</small> ' : ''}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+  function showHideResult() {
+    const r = H.result;
+    drawQr($('qrCanvas'), qrPayload(r.ticket, r.expires, r.years), 'expires ' + new Date(r.expires).toISOString().slice(0, 16).replace('T', ' ') + ' UTC');
+    $('saveIcs').hidden = !r.years;
+    $('keyText').textContent = r.ticket;
+    $('facts').innerHTML = [['Hidden file', r.secret], ['Tokens', r.tokens], ['Carriers', r.outs.length + (r.split ? ' · all needed' : ' · any one')], ['Passphrase', r.pass ? 'Required' : 'None'], ...(r.years ? [['Check-ins', r.rec.checkins.length ? r.rec.checkins.length + ' · first ' + fmtDate(r.rec.checkins[0]) : 'reminder only']] : []), ['Expires', new Date(r.expires).toLocaleDateString(undefined, { dateStyle: 'medium' })]]
+      .map(([k, v]) => `<div class="fact"><span>${k}</span><b>${esc(v)}</b></div>`).join('');
+    $('outs').innerHTML = r.outs.map((o, i) => `<div class="filecard"><span class="ic">${esc(o.kind)}</span><div style="min-width:0"><div class="nm">${esc(o.name)}</div><div class="mt">${fmtSize(o.size)} · ${o.tokens} tokens</div></div><button class="btn small primary" type="button" data-save="${i}">Save</button></div>`).join('');
+    document.querySelectorAll('[data-save]').forEach((b) => b.onclick = () => { const o = r.outs[+b.dataset.save]; offer(o.name, o.blob); });
+    $('hideResult').hidden = false; $('hideResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('saveQr').onclick = () => $('qrCanvas').toBlob((b) => offer('vault-key-' + new Date(H.result.created).toISOString().slice(0, 10) + '.png', b), 'image/png');
+  $('saveIcs').onclick = () => vaultAction(H.result.rec.id, 'ics');
+  $('copyKey').onclick = async () => { try { await navigator.clipboard.writeText(H.result.ticket); toast('Key copied'); } catch (e) { const s = getSelection(), rg = document.createRange(); rg.selectNodeContents($('keyText')); s.removeAllRanges(); s.addRange(rg); toast('Key selected. Copy it.'); } };
+
+  /* =====================================================================
+     REVEAL FLOW
+     ===================================================================== */
+  const R = { ticket: null, files: [] };
+  function showTicket() {
+    const el = $('ticketInfo'), t = R.ticket;
+    $('passRevealWrap').hidden = !(t && t.pass);
+    if (!t) { el.innerHTML = ''; updateUnlock(); return; }
+    const left = t.expires - now(), rec = reg.get(t.id), st = rec ? vaultStatus(rec) : null;
+    t.blocked = st && st.state === 'terminated' ? `This vault was terminated on ${fmtDate(rec.terminated)}. ${rec.reason || ''}` : null;
+    if (t.blocked) { el.innerHTML = `<div class="note bad"><b>${esc(LOCK_NOTICE)}</b> ${esc(t.blocked)}</div>`; $('passRevealWrap').hidden = true; updateUnlock(); return; }
+    el.innerHTML = (st && st.state === 'due' ? `<div class="note warn" style="margin-bottom:8px"><b>Check-in due.</b> Answer it in My vaults by ${fmtDate(st.due + GRACE)}.</div>` : '') + (t.years && !rec ? `<div class="note info" style="margin-bottom:8px"><b>Long-term vault (${t.years} years).</b> Its check-ins are kept on the device that made it.</div>` : '') + `<div class="note ${left > 0 ? 'ok' : 'bad'}"><b>${left > 0 ? 'Key accepted.' : esc(LOCK_NOTICE) + ' Its period has ended.'}</b> Made ${new Date(t.created).toLocaleString()}. ${left > 0 ? `Works for <span class="mono" id="revTimer">${countdown(left)}</span> more.` : `It stopped working on ${new Date(t.expires).toLocaleString()}.`}
+      ${t.count} carrier${t.count > 1 ? 's' : ''}, ${t.split ? 'all needed' : 'any one will do'}${t.pass ? ', passphrase required' : ''}.</div>`;
+    updateUnlock();
+  }
+  function setTicketFromText(txt) { try { R.ticket = parseTicket(txt); } catch (e) { R.ticket = null; $('ticketInfo').innerHTML = `<div class="note bad">${esc(e.message)}</div>`; updateUnlock(); return; } showTicket(); }
+  $('keyIn').addEventListener('input', (e) => { if (e.target.value.trim()) setTicketFromText(e.target.value); });
+  async function readQrFile(file) {
+    try {
+      const bmp = await createImageBitmap(file), scale = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+      const x = c.getContext('2d'); x.drawImage(bmp, 0, 0, c.width, c.height);
+      const d = x.getImageData(0, 0, c.width, c.height), q = jsQR(d.data, c.width, c.height, { inversionAttempts: 'attemptBoth' });
+      if (!q) throw new Error('No QR code found in that image. Try a sharper, straight-on picture.');
+      $('keyIn').value = q.data; setTicketFromText(q.data);
+    } catch (e) { $('ticketInfo').innerHTML = `<div class="note bad">${esc(e.message)}</div>`; }
+  }
+  wireDrop($('qrDrop'), $('qrIn'), (fs) => readQrFile(fs[0]));
+  wireDrop($('carDrop'), $('carIn'), (fs) => { for (const f of fs) if (!R.files.some((x) => x.name === f.name && x.size === f.size)) R.files.push(f); renderCarList(); });
+  function renderCarList() {
+    $('carList').innerHTML = R.files.map((f, i) => `<div class="filecard"><span class="ic">${esc(kindOf(f) || '?')}</span><div style="min-width:0"><div class="nm">${esc(f.name)}</div><div class="mt" id="carSt${i}">${fmtSize(f.size)}</div></div><button class="btn small" data-rrm="${i}" type="button" aria-label="Remove">✕</button></div>`).join('');
+    document.querySelectorAll('[data-rrm]').forEach((b) => b.onclick = () => { R.files.splice(+b.dataset.rrm, 1); renderCarList(); });
+    updateUnlock();
+  }
+  function updateUnlock() {
+    let why = '';
+    if (!R.ticket) why = 'Add the QR key first.'; else if (R.ticket.blocked) why = 'This vault was terminated.'; else if (R.ticket.expires <= now()) why = 'This key has expired, so the vault stays shut.'; else if (!R.files.length) why = 'Add the carriers.';
+    $('unlockBtn').disabled = !!why || R.busy; $('unlockWhy').textContent = why;
+  }
+
+  async function extractBlob(file, keys, bits, count) {
+    const kind = kindOf(file);
+    const tryUnmask = async (getBytes) => {
+      for (let ci = 0; ci < Math.max(1, count); ci++) {
+        const first = await getBytes(8); if (!first) return null;
+        const h = xorInto(first.slice(), await keystream(keys, ci, 8));
+        if (h[0] === MAGIC[0] && h[1] === MAGIC[1] && h[2] === MAGIC[2] && h[3] === MAGIC[3]) {
+          const len = getU32(h, 4), all = await getBytes(8 + len); if (!all) return null;
+          return xorInto(all.slice(), await keystream(keys, ci, 8 + len)).slice(8);
+        }
+      }
+      return null;
+    };
+    if (kind === 'picture') { const p = await imageDataFrom(file), ctx = { ...p, bits }; return tryUnmask(async (n) => picture.read(ctx, keys, n)); }
+    if (kind === 'song') {
+      const w = parseWav(await file.arrayBuffer());
+      if (!w) throw new Error('Songs must be the WAV file Vault Secure saved. An MP3 copy has lost the tokens.');
+      const ctx = { pcm: w, bits }; return tryUnmask(async (n) => song.read(ctx, keys, n));
+    }
+    if (kind === 'video' || kind === 'document') { const b = await container.extract(file, keys); if (!b) return null; return tryUnmask(async (n) => (n <= b.length ? b.slice(0, n) : null)); }
+    throw new Error('Unknown carrier type');
+  }
+
+  const setSt = (i, m) => { const el = $('carSt' + i); if (el) el.textContent = m; };
+  async function unlock() {
+    const L = $('revealLog'); L.textContent = ''; R.busy = true; updateUnlock(); $('revealResult').hidden = true;
+    const t = R.ticket;
+    try {
+      if (t.expires <= now()) throw new Error('This key has expired.');
+      { const rec = reg.get(t.id); if (rec && vaultStatus(rec).state === 'terminated') throw new Error('This vault was terminated on ' + fmtDate(rec.terminated) + '.'); }
+      const pass = t.pass ? $('passReveal').value : '';
+      if (t.pass && !pass) throw new Error('Type the passphrase.');
+      log(L, t.pass ? 'Stretching passphrase…' : 'Making keys…');
+      const keys = await deriveKeys(t.key, t.vaultId, pass);
+      const got = new Map(); let total = null;
+      for (let i = 0; i < R.files.length; i++) {
+        const f = R.files[i];
+        try {
+          const body = await extractBlob(f, keys, t.bits, t.count);
+          if (!body) { setSt(i, 'No tokens for this key'); log(L, `${f.name}: nothing found (wrong key, wrong passphrase, or the file was re-compressed)`); continue; }
+          const r = await parseTokens(keys, t.vaultId, body, got);
+          if (r.total != null) total = r.total;
+          setSt(i, `${r.good} tokens found${r.bad ? ', ' + r.bad + ' damaged' : ''}`);
+          log(L, `${f.name}: ${r.good} good tokens${r.bad ? ', ' + r.bad + ' failed their seal' : ''}`);
+        } catch (e) { setSt(i, e.message); log(L, `${f.name}: ${e.message}`); }
+      }
+      if (total == null) throw new Error(t.pass ? 'No tokens found. Check the passphrase and that these are the right carriers.' : 'No tokens found. These carriers do not belong to this key, or they were re-compressed.');
+      if (got.size < total) throw new Error(`Found ${got.size} of ${total} tokens. Add the other carrier${t.count - R.files.length > 1 ? 's' : ''} from this vault.`);
+      const cipher = concat(...Array.from({ length: total }, (_, i) => got.get(i)));
+      let plain;
+      try { plain = new Uint8Array(await subtle.decrypt({ name: 'AES-GCM', iv: cipher.slice(0, 12), additionalData: t.aad, tagLength: 128 }, keys.enc, cipher.slice(12))); }
+      catch (e) { throw new Error('Decryption failed. The key, passphrase or expiry does not match these carriers.'); }
+      const ml = getU32(plain, 0), meta = JSON.parse(td.decode(plain.slice(4, 4 + ml)));
+      let data = plain.slice(4 + ml); if (meta.z) data = await inflate(data);
+      log(L, `Rebuilt ${meta.n} (${fmtSize(data.length)}). Seal verified.`);
+      const blob = new Blob([data], { type: meta.t || 'application/octet-stream' });
+      const preview = /^text\//.test(meta.t) || /\.(txt|md|csv|json)$/i.test(meta.n) ? `<pre class="log" style="max-height:260px">${esc(td.decode(data.slice(0, 20000)))}</pre>` : /^image\//.test(meta.t) ? `<img src="${URL.createObjectURL(blob)}" alt="" style="max-height:320px;border-radius:10px;justify-self:start">` : '';
+      $('revealResult').innerHTML = `<header><span class="num">03</span><h2>Unlocked</h2></header>
+        <div class="filecard"><span class="ic">${esc(EXT(meta.n))}</span><div style="min-width:0"><div class="nm">${esc(meta.n)}</div><div class="mt">${fmtSize(data.length)} · ${total} tokens · AES-256-GCM seal verified</div></div><button class="btn primary" id="saveSecret" type="button">Save file</button></div>${preview}`;
+      $('revealResult').hidden = false;
+      $('saveSecret').onclick = () => offer(meta.n, blob);
+    } catch (e) { log(L, 'Stopped: ' + e.message); $('revealResult').innerHTML = `<div class="note bad"><b>Not unlocked.</b> ${esc(e.message)}</div>`; $('revealResult').hidden = false; }
+    R.busy = false; updateUnlock();
+  }
+
+  /* =====================================================================
+     SHARED UI
+     ===================================================================== */
+  function wireDrop(zone, input, onFiles) {
+    if (!zone || !input) return;
+    ['dragenter', 'dragover'].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach((ev) => zone.addEventListener(ev, () => zone.classList.remove('over')));
+    zone.addEventListener('drop', (e) => { e.preventDefault(); const fs = [...e.dataTransfer.files]; if (fs.length) onFiles(fs); });
+    input.addEventListener('change', () => { const fs = [...input.files]; if (fs.length) onFiles(fs); input.value = ''; });
+  }
+  function route() {
+    const v = location.hash === '#reveal' ? 'reveal' : location.hash === '#vaults' ? 'vaults' : 'hide';
+    $('viewHide').hidden = v !== 'hide'; $('viewReveal').hidden = v !== 'reveal'; $('viewVaults').hidden = v !== 'vaults';
+    $('tabVaults').setAttribute('aria-current', v === 'vaults' ? 'page' : 'false');
+    if (v === 'vaults') renderVaults();
+    $('tabHide').setAttribute('aria-current', v === 'hide' ? 'page' : 'false'); $('tabReveal').setAttribute('aria-current', v === 'reveal' ? 'page' : 'false');
+  }
+  window.addEventListener('hashchange', route);
+  document.querySelectorAll('input[name=mode],input[name=bits]').forEach((r) => r.addEventListener('change', () => { renderSlots(); updateCap(); }));
+  document.querySelectorAll('input[name=ttl]').forEach((r) => r.addEventListener('change', echoTtl));
+  $('yearsSel').addEventListener('change', echoTtl);
+  $('testBeep').onclick = () => beep(true);
+  try { $('muteBeep').checked = muted(); } catch (e) { /* ignore */ }
+  $('muteBeep').onchange = (e) => { try { localStorage.setItem('vaultsecure.mute', e.target.checked ? '1' : '0'); } catch (err) { /* ignore */ } };
+  $('lockBtn').onclick = lockAndHide;
+  $('unlockBtn').onclick = unlock;
+  setInterval(() => {
+    if (H.result) { const left = H.result.expires - now(); $('hideTimer').innerHTML = countdown(left); $('hideRing').style.width = Math.max(0, left / (H.result.expires - H.result.created) * 100) + '%'; }
+    document.querySelectorAll('[data-left]').forEach((el) => { const r = reg.get(el.dataset.left); if (r) el.innerHTML = countdown(r.expires - now()); });
+    if (R.ticket && $('revTimer')) { const left = R.ticket.expires - now(); if (left <= 0) showTicket(); else $('revTimer').innerHTML = countdown(left); }
+  }, 1000);
+  setInterval(refreshVaultUi, 30000);
+
+  renderSecret(); renderSlots(); echoTtl(); updateCap(); route(); refreshVaultUi();
+  window.VaultSecure = { reg, vaultStatus, checkinsFor, refreshVaultUi, vaultAction, icsFor, parseTicket, deriveKeys, expiryFrom, picture, song, container, parseWav, H, R, lockAndHide, unlock, loadCarrier, extractBlob };
+})();
+</script>
+
+</body>
+</html>
